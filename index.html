@@ -1,0 +1,2032 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SambungKata — Game Kata Viral Indonesia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================
+   ROOT VARIABLES & RESET
+   ============================================ */
+:root {
+  --bg: #050508;
+  --surface: #0d0d14;
+  --card: #12121c;
+  --card2: #18182a;
+  --border: #ffffff0f;
+  --border2: #ffffff18;
+  --accent: #7c3aed;       /* violet */
+  --accent-glow: #7c3aed66;
+  --accent2: #f59e0b;      /* amber */
+  --accent3: #10b981;      /* emerald */
+  --danger: #ef4444;
+  --danger-glow: #ef444440;
+  --text: #f1f0ff;
+  --text2: #a09ec0;
+  --text3: #5a587a;
+  --win: #10b981;
+  --lose: #ef4444;
+
+  --font-display: 'Dela Gothic One', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Animated grid background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(124,58,237,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124,58,237,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+
+/* Glow orbs */
+.orb {
+  position: fixed; border-radius: 50%;
+  filter: blur(120px); pointer-events: none; z-index: 0;
+  animation: orbFloat 15s ease-in-out infinite;
+}
+.orb1 { width: 500px; height: 500px; background: rgba(124,58,237,0.08); top: -100px; left: -100px; }
+.orb2 { width: 400px; height: 400px; background: rgba(245,158,11,0.05); bottom: -50px; right: -50px; animation-delay: -7s; }
+.orb3 { width: 300px; height: 300px; background: rgba(16,185,129,0.05); top: 40%; left: 60%; animation-delay: -4s; }
+@keyframes orbFloat {
+  0%,100% { transform: translate(0,0); }
+  33% { transform: translate(40px,-30px); }
+  66% { transform: translate(-20px,40px); }
+}
+
+/* ============================================
+   SCREEN SYSTEM
+   ============================================ */
+.page { display: none; min-height: 100vh; position: relative; z-index: 1; }
+.page.active { display: flex; flex-direction: column; }
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+.title-xl { font-family: var(--font-display); font-size: clamp(40px, 8vw, 80px); line-height: 1; }
+.title-lg { font-family: var(--font-display); font-size: clamp(28px, 5vw, 48px); line-height: 1.1; }
+.title-md { font-family: var(--font-display); font-size: clamp(20px, 3vw, 28px); }
+.label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text3); }
+
+/* ============================================
+   COMPONENTS
+   ============================================ */
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-weight: 700; font-size: 14px;
+  border: none; cursor: pointer; transition: all 0.2s; text-decoration: none;
+  white-space: nowrap; position: relative; overflow: hidden;
+}
+.btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(rgba(255,255,255,0.1), transparent);
+  opacity: 0; transition: opacity 0.2s;
+}
+.btn:hover::after { opacity: 1; }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--accent); color: #fff;
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+.btn-primary:hover { box-shadow: 0 0 40px var(--accent-glow); transform: translateY(-2px); }
+
+.btn-amber { background: var(--accent2); color: #000; }
+.btn-amber:hover { transform: translateY(-2px); box-shadow: 0 0 24px rgba(245,158,11,0.4); }
+
+.btn-emerald { background: var(--accent3); color: #000; }
+.btn-emerald:hover { transform: translateY(-2px); box-shadow: 0 0 24px rgba(16,185,129,0.4); }
+
+.btn-ghost {
+  background: transparent; color: var(--text2);
+  border: 1px solid var(--border2);
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-lg { padding: 16px 32px; font-size: 16px; border-radius: var(--radius); }
+.btn-sm { padding: 8px 16px; font-size: 12px; }
+.btn-icon { padding: 10px; border-radius: 50%; aspect-ratio: 1; justify-content: center; }
+.btn-full { width: 100%; justify-content: center; }
+
+/* Cards */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+}
+.card-glow { box-shadow: 0 0 0 1px var(--border), inset 0 1px 0 rgba(255,255,255,0.05); }
+
+/* Input */
+.input {
+  width: 100%; background: var(--surface);
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  padding: 14px 18px; color: var(--text);
+  font-family: var(--font-body); font-size: 15px; font-weight: 600;
+  transition: all 0.2s; outline: none;
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.input::placeholder { color: var(--text3); font-weight: 400; }
+.input.error { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-glow); animation: shake 0.4s; }
+.input.success { border-color: var(--accent3); }
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 20%{transform:translateX(-10px)} 40%{transform:translateX(10px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)}
+}
+
+/* Badge */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+}
+.badge-violet { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+.badge-amber { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+.badge-emerald { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+.badge-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+
+/* Avatar */
+.avatar {
+  border-radius: 50%; object-fit: cover;
+  background: var(--card2); flex-shrink: 0;
+}
+
+/* Divider */
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--text3); font-size: 12px; font-weight: 600;
+  margin: 20px 0;
+}
+.divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--border2); }
+
+/* ============================================
+   NAVBAR
+   ============================================ */
+.navbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px;
+  background: rgba(5,5,8,0.8); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.navbar-logo {
+  font-family: var(--font-display); font-size: 22px;
+  background: linear-gradient(135deg, #a78bfa, #f59e0b);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.navbar-right { display: flex; align-items: center; gap: 10px; }
+.navbar-user {
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; padding: 6px 12px; border-radius: 30px;
+  border: 1px solid var(--border2); transition: border-color 0.2s;
+}
+.navbar-user:hover { border-color: var(--accent); }
+.navbar-user-name { font-size: 14px; font-weight: 700; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ============================================
+   LOGIN PAGE
+   ============================================ */
+#loginPage {
+  align-items: center; justify-content: center;
+  padding: 24px; min-height: 100vh;
+}
+.login-container {
+  max-width: 420px; width: 100%; text-align: center;
+  animation: fadeUp 0.6s ease;
+}
+.login-logo { font-size: 64px; margin-bottom: 16px; display: block; }
+.login-title { margin-bottom: 12px; }
+.login-sub { color: var(--text2); margin-bottom: 40px; line-height: 1.7; font-size: 15px; }
+.google-btn {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  width: 100%; padding: 18px; border-radius: var(--radius);
+  background: #fff; color: #1a1a1a;
+  font-family: var(--font-body); font-size: 16px; font-weight: 700;
+  border: none; cursor: pointer; transition: all 0.2s;
+}
+.google-btn:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(255,255,255,0.15); }
+.google-btn:active { transform: scale(0.98); }
+.login-stats {
+  display: flex; gap: 24px; justify-content: center;
+  margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--border);
+}
+.login-stat { text-align: center; }
+.login-stat-num { font-family: var(--font-display); font-size: 24px; color: var(--accent); }
+.login-stat-label { font-size: 12px; color: var(--text3); }
+
+/* ============================================
+   HOME PAGE
+   ============================================ */
+#homePage { background: var(--bg); }
+.home-content { flex: 1; padding: 24px; max-width: 700px; margin: 0 auto; width: 100%; }
+.home-welcome { margin-bottom: 32px; animation: fadeUp 0.5s ease; }
+.home-welcome-text { color: var(--text2); font-size: 15px; margin-top: 4px; }
+
+.streak-bar {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05));
+  border: 1px solid rgba(245,158,11,0.2); border-radius: var(--radius);
+  padding: 16px 20px; margin-bottom: 24px;
+  animation: fadeUp 0.5s ease 0.1s both;
+}
+.streak-fire { font-size: 28px; animation: fireShake 0.5s ease infinite alternate; }
+@keyframes fireShake { from{transform:rotate(-5deg)} to{transform:rotate(5deg)} }
+.streak-info { flex: 1; }
+.streak-count { font-family: var(--font-display); font-size: 22px; color: var(--accent2); }
+.streak-label { font-size: 12px; color: var(--text3); }
+
+.menu-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;
+  animation: fadeUp 0.5s ease 0.15s both;
+}
+.menu-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden;
+  text-align: left;
+}
+.menu-card::before {
+  content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.3s;
+}
+.menu-card.violet::before { background: radial-gradient(circle at 0% 0%, rgba(124,58,237,0.1), transparent 60%); }
+.menu-card.amber::before { background: radial-gradient(circle at 0% 0%, rgba(245,158,11,0.1), transparent 60%); }
+.menu-card.emerald::before { background: radial-gradient(circle at 0% 0%, rgba(16,185,129,0.1), transparent 60%); }
+.menu-card.blue::before { background: radial-gradient(circle at 0% 0%, rgba(59,130,246,0.1), transparent 60%); }
+.menu-card:hover { transform: translateY(-4px); border-color: var(--border2); }
+.menu-card:hover::before { opacity: 1; }
+.menu-card-icon { font-size: 36px; margin-bottom: 14px; display: block; }
+.menu-card-title { font-weight: 800; font-size: 16px; margin-bottom: 4px; }
+.menu-card-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+
+/* ============================================
+   LEADERBOARD
+   ============================================ */
+.lb-section { animation: fadeUp 0.5s ease 0.2s both; }
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title-text { font-weight: 800; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.lb-list { display: flex; flex-direction: column; gap: 8px; }
+.lb-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  transition: all 0.2s;
+}
+.lb-row:hover { border-color: var(--border2); transform: translateX(4px); }
+.lb-row.me { border-color: rgba(124,58,237,0.4); background: rgba(124,58,237,0.05); }
+.lb-rank { font-family: var(--font-mono); font-weight: 700; font-size: 14px; width: 28px; text-align: center; color: var(--text3); }
+.lb-rank.g1 { color: #FFD700; }
+.lb-rank.g2 { color: #C0C0C0; }
+.lb-rank.g3 { color: #CD7F32; }
+.lb-name { flex: 1; font-weight: 700; font-size: 14px; }
+.lb-wins { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent2); }
+
+/* ============================================
+   LOBBY PAGE
+   ============================================ */
+#lobbyPage { align-items: center; justify-content: center; padding: 24px; }
+.lobby-box { max-width: 440px; width: 100%; animation: fadeUp 0.5s ease; }
+.lobby-box h2 { margin-bottom: 8px; }
+.lobby-sub { color: var(--text2); margin-bottom: 32px; font-size: 14px; }
+.room-code-display {
+  text-align: center; padding: 28px;
+  background: var(--surface); border: 2px dashed rgba(124,58,237,0.4);
+  border-radius: var(--radius); margin-bottom: 20px;
+}
+.room-code-text {
+  font-family: var(--font-mono); font-size: 42px; font-weight: 700;
+  color: var(--accent); letter-spacing: 8px;
+  text-shadow: 0 0 30px var(--accent-glow);
+  animation: codePulse 2s ease-in-out infinite;
+}
+@keyframes codePulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+.room-code-hint { font-size: 12px; color: var(--text3); margin-top: 8px; }
+.players-waiting { margin: 20px 0; }
+.player-slot {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 8px;
+}
+.player-slot.empty { opacity: 0.5; border-style: dashed; }
+.player-slot-name { font-weight: 700; font-size: 14px; flex: 1; }
+.player-slot-badge { font-size: 10px; }
+.waiting-dots::after {
+  content: '...'; animation: dots 1.5s steps(4,end) infinite;
+}
+@keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} 100%{content:'.'} }
+
+/* ============================================
+   MATCHMAKING PAGE
+   ============================================ */
+#matchmakingPage { align-items: center; justify-content: center; padding: 24px; }
+.mm-box { text-align: center; max-width: 380px; }
+.mm-radar {
+  width: 140px; height: 140px; margin: 0 auto 32px;
+  border-radius: 50%; border: 2px solid rgba(124,58,237,0.3);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.mm-radar::before {
+  content: ''; position: absolute; inset: 8px; border-radius: 50%;
+  border: 2px solid rgba(124,58,237,0.2);
+}
+.mm-radar::after {
+  content: ''; position: absolute; inset: 24px; border-radius: 50%;
+  border: 2px solid rgba(124,58,237,0.15);
+}
+.mm-sweep {
+  position: absolute; width: 50%; height: 2px; top: 50%; left: 50%;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  animation: sweep 2s linear infinite;
+}
+@keyframes sweep { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.mm-icon { font-size: 40px; position: relative; z-index: 1; }
+.mm-title { font-family: var(--font-display); font-size: 28px; margin-bottom: 8px; }
+.mm-sub { color: var(--text2); font-size: 14px; }
+
+/* ============================================
+   GAME PAGE
+   ============================================ */
+#gamePage { background: var(--bg); }
+.game-layout { flex: 1; display: flex; flex-direction: column; max-width: 680px; margin: 0 auto; width: 100%; padding: 16px; gap: 14px; }
+
+/* Players Bar */
+.players-bar {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+}
+.player-side { display: flex; align-items: center; gap: 10px; }
+.player-side.right { flex-direction: row-reverse; text-align: right; }
+.player-side-name { font-weight: 800; font-size: 14px; }
+.player-side-hearts { font-size: 14px; line-height: 1; }
+.player-side.active .player-side-name { color: var(--accent); }
+.player-side.active .avatar { box-shadow: 0 0 0 2px var(--accent); }
+.bar-vs { font-family: var(--font-display); font-size: 16px; color: var(--text3); text-align: center; }
+
+/* Timer */
+.timer-section { display: flex; justify-content: center; }
+.timer-wrap { position: relative; width: 100px; height: 100px; }
+.timer-svg { width: 100px; height: 100px; transform: rotate(-90deg); }
+.timer-track { fill: none; stroke: var(--border2); stroke-width: 5; }
+.timer-fill {
+  fill: none; stroke: var(--accent); stroke-width: 5;
+  stroke-linecap: round; stroke-dasharray: 283;
+  transition: stroke-dashoffset 1s linear, stroke 0.3s;
+}
+.timer-num {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 28px; font-weight: 700;
+}
+.timer-num.urgent { color: var(--danger); animation: urgentPulse 0.5s ease infinite alternate; }
+@keyframes urgentPulse { from{opacity:1;transform:scale(1)} to{opacity:0.6;transform:scale(1.1)} }
+
+/* Word Chain */
+.chain-area {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px;
+  min-height: 80px;
+}
+.chain-scroll {
+  display: flex; gap: 8px; align-items: center;
+  overflow-x: auto; padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.chain-scroll::-webkit-scrollbar { height: 3px; }
+.chain-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.chain-word {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 6px 14px;
+  font-weight: 700; font-size: 14px; white-space: nowrap;
+  animation: wordIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  flex-shrink: 0;
+}
+.chain-word.by-me { border-color: rgba(124,58,237,0.5); background: rgba(124,58,237,0.08); }
+.chain-word.by-opp { border-color: rgba(245,158,11,0.5); background: rgba(245,158,11,0.08); }
+.chain-arrow { color: var(--text3); font-size: 12px; flex-shrink: 0; }
+@keyframes wordIn { from{transform:scale(0) rotate(-15deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+
+/* Current Word Prompt */
+.prompt-area {
+  background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(124,58,237,0.02));
+  border: 1px solid rgba(124,58,237,0.25); border-radius: var(--radius);
+  padding: 20px 24px; text-align: center;
+}
+.prompt-current { font-family: var(--font-display); font-size: clamp(24px,5vw,40px); color: var(--text); margin: 4px 0 10px; letter-spacing: 2px; }
+.prompt-must { font-size: 14px; color: var(--text2); }
+.prompt-must strong { color: var(--accent2); font-family: var(--font-mono); font-size: 18px; background: rgba(245,158,11,0.1); padding: 2px 8px; border-radius: 6px; }
+.prompt-attempts { display: flex; gap: 6px; justify-content: center; margin-top: 12px; }
+.attempt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border2); transition: all 0.3s; }
+.attempt-dot.used { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+/* Answer Area */
+.answer-area { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; }
+.answer-row { display: flex; gap: 10px; }
+.answer-input {
+  flex: 1; background: var(--surface); border: 2px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 14px 18px;
+  color: var(--text); font-family: var(--font-body); font-size: 18px; font-weight: 700;
+  transition: all 0.2s; outline: none; text-transform: lowercase;
+}
+.answer-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.answer-input.error { border-color: var(--danger); animation: shake 0.35s; }
+.answer-input.correct { border-color: var(--accent3); box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
+.answer-input:disabled { opacity: 0.4; cursor: not-allowed; }
+.answer-hint { font-size: 12px; color: var(--text3); margin-top: 8px; text-align: center; min-height: 18px; }
+
+/* Waiting overlay */
+.waiting-turn {
+  text-align: center; padding: 16px;
+  color: var(--text2); font-size: 14px; font-weight: 600;
+}
+
+/* Chat Box */
+.chat-area { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.chat-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; color: var(--text3); }
+.chat-messages { height: 100px; overflow-y: auto; padding: 10px 16px; display: flex; flex-direction: column; gap: 6px; }
+.chat-msg { font-size: 13px; }
+.chat-msg .who { font-weight: 700; color: var(--accent); }
+.chat-msg .msg { color: var(--text2); }
+.chat-msg.system .msg { color: var(--text3); font-style: italic; }
+.chat-row { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
+.chat-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text); font-family: var(--font-body); font-size: 13px;
+}
+.chat-input::placeholder { color: var(--text3); }
+
+/* ============================================
+   RESULT PAGE
+   ============================================ */
+#resultPage { align-items: center; justify-content: center; padding: 24px; }
+.result-box { max-width: 480px; width: 100%; text-align: center; animation: fadeUp 0.6s ease; }
+.result-emoji-big { font-size: 100px; display: block; margin-bottom: 16px; animation: resultPop 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes resultPop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+.result-label { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
+.result-big { font-family: var(--font-display); font-size: 56px; margin-bottom: 8px; }
+.result-big.win { color: var(--win); text-shadow: 0 0 40px rgba(16,185,129,0.4); }
+.result-big.lose { color: var(--lose); }
+.result-sub { color: var(--text2); margin-bottom: 28px; }
+.result-stats { text-align: left; margin-bottom: 24px; }
+.result-stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.result-stat-row:last-child { border-bottom: none; }
+.result-stat-label { color: var(--text2); font-size: 14px; }
+.result-stat-val { font-weight: 700; font-family: var(--font-mono); font-size: 14px; }
+.share-area { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; }
+.share-text { font-size: 13px; color: var(--text2); white-space: pre-line; text-align: left; margin-bottom: 14px; line-height: 1.7; }
+.share-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.result-actions { display: flex; gap: 10px; justify-content: center; }
+
+/* ============================================
+   PROFILE MODAL
+   ============================================ */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  z-index: 100; display: none; align-items: center; justify-content: center; padding: 24px;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 28px;
+  max-width: 400px; width: 100%;
+  animation: fadeUp 0.3s ease;
+}
+.modal h3 { font-size: 20px; font-weight: 800; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.profile-top { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.profile-stat { background: var(--surface); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
+.profile-stat-val { font-family: var(--font-display); font-size: 24px; color: var(--accent); }
+.profile-stat-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.badges-section { margin-bottom: 20px; }
+.badges-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+/* ============================================
+   DAILY CHALLENGE
+   ============================================ */
+#dailyPage { align-items: center; justify-content: center; padding: 24px; }
+.daily-box { max-width: 440px; width: 100%; text-align: center; animation: fadeUp 0.5s ease; }
+.daily-countdown { font-family: var(--font-mono); font-size: 36px; font-weight: 700; color: var(--accent2); margin: 16px 0; }
+
+/* ============================================
+   TOAST
+   ============================================ */
+.toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  padding: 12px 18px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 700; max-width: 280px;
+  animation: toastIn 0.3s ease;
+  display: flex; align-items: center; gap: 8px;
+}
+.toast-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
+.toast-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
+.toast-info { background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3); color: #a78bfa; }
+@keyframes toastIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+/* ============================================
+   CONFETTI CANVAS
+   ============================================ */
+#confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 150; }
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.stagger1 { animation: fadeUp 0.5s ease 0.05s both; }
+.stagger2 { animation: fadeUp 0.5s ease 0.1s both; }
+.stagger3 { animation: fadeUp 0.5s ease 0.15s both; }
+.stagger4 { animation: fadeUp 0.5s ease 0.2s both; }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 480px) {
+  .menu-grid { grid-template-columns: 1fr; }
+  .game-layout { padding: 10px; gap: 10px; }
+  .players-bar { padding: 10px 12px; }
+  .navbar { padding: 12px 16px; }
+  .home-content { padding: 16px; }
+}
+@media (max-width: 360px) {
+  .navbar-user-name { display: none; }
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Background Orbs -->
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- Confetti Canvas -->
+<canvas id="confettiCanvas"></canvas>
+
+<!-- Toast Container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- ============================================
+     LOGIN PAGE
+     ============================================ -->
+<div class="page active" id="loginPage">
+  <div class="login-container">
+    <span class="login-logo">🔤</span>
+    <div class="title-xl login-title">Sambung<br><span style="color:var(--accent)">Kata</span></div>
+    <p class="login-sub">Game sambung kata Indonesia real-time!<br>Lawan teman atau pemain global. Siapa lebih banyak kosakata?</p>
+    <button class="google-btn" onclick="loginGoogle()">
+      <svg width="24" height="24" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      Masuk dengan Google
+    </button>
+    <div class="login-stats">
+      <div class="login-stat"><div class="login-stat-num">10K+</div><div class="login-stat-label">Kata KBBI</div></div>
+      <div class="login-stat"><div class="login-stat-num">50s</div><div class="login-stat-label">Per Giliran</div></div>
+      <div class="login-stat"><div class="login-stat-num">3</div><div class="login-stat-label">Kesempatan</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     HOME PAGE
+     ============================================ -->
+<div class="page" id="homePage">
+  <nav class="navbar">
+    <div class="navbar-logo">SambungKata</div>
+    <div class="navbar-right">
+      <div class="navbar-user" onclick="openProfile()">
+        <img class="avatar" id="navAvatar" src="" width="30" height="30" alt="">
+        <span class="navbar-user-name" id="navName"></span>
+      </div>
+    </div>
+  </nav>
+  <div class="home-content">
+    <div class="home-welcome stagger1">
+      <div class="title-md" id="homeGreeting">Halo, Pemain!</div>
+      <div class="home-welcome-text">Pilih mode permainan atau lihat tantangan hari ini</div>
+    </div>
+
+    <!-- Streak Bar -->
+    <div class="streak-bar stagger2" id="streakBar" style="display:none">
+      <span class="streak-fire">🔥</span>
+      <div class="streak-info">
+        <div class="streak-count" id="streakCount">0</div>
+        <div class="streak-label">WIN STREAK</div>
+      </div>
+      <div class="badge badge-amber" id="streakBadge"></div>
+    </div>
+
+    <!-- Menu Grid -->
+    <div class="menu-grid stagger3">
+      <div class="menu-card violet" onclick="goToGlobal()">
+        <span class="menu-card-icon">🌏</span>
+        <div class="menu-card-title">Global Match</div>
+        <div class="menu-card-desc">Lawan pemain acak dari seluruh Indonesia</div>
+      </div>
+      <div class="menu-card amber" onclick="goToFriend()">
+        <span class="menu-card-icon">👥</span>
+        <div class="menu-card-title">Lawan Teman</div>
+        <div class="menu-card-desc">Buat room dan ajak teman bermain</div>
+      </div>
+      <div class="menu-card emerald" onclick="goToDaily()">
+        <span class="menu-card-icon">📅</span>
+        <div class="menu-card-title">Daily Challenge</div>
+        <div class="menu-card-desc">Tantangan harian dengan kata awal spesial</div>
+      </div>
+      <div class="menu-card blue" onclick="openProfile()">
+        <span class="menu-card-icon">👤</span>
+        <div class="menu-card-title">Profil & Badge</div>
+        <div class="menu-card-desc">Lihat statistik dan koleksi badge kamu</div>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="lb-section stagger4">
+      <div class="section-header">
+        <div class="section-title-text">🏆 Leaderboard</div>
+        <div class="badge badge-violet" id="myRankBadge">Rank #—</div>
+      </div>
+      <div class="lb-list" id="lbList">
+        <div style="text-align:center;padding:24px;color:var(--text3)">Memuat...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     LOBBY PAGE (Friend Mode)
+     ============================================ -->
+<div class="page" id="lobbyPage">
+  <nav class="navbar">
+    <button class="btn btn-ghost btn-sm" onclick="leaveLobby()">← Kembali</button>
+    <div class="navbar-logo">Lawan Teman</div>
+    <div style="width:80px"></div>
+  </nav>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px">
+    <div class="lobby-box" id="lobbyContent"></div>
+  </div>
+</div>
+
+<!-- ============================================
+     MATCHMAKING PAGE
+     ============================================ -->
+<div class="page" id="matchmakingPage">
+  <nav class="navbar">
+    <button class="btn btn-ghost btn-sm" onclick="cancelMatchmaking()">✕ Batalkan</button>
+    <div class="navbar-logo">Mencari Lawan</div>
+    <div style="width:80px"></div>
+  </nav>
+  <div class="mm-box">
+    <div class="mm-radar">
+      <div class="mm-sweep"></div>
+      <span class="mm-icon">🔍</span>
+    </div>
+    <div class="mm-title">Mencari Lawan...</div>
+    <p class="mm-sub" style="margin-top:8px">Memindai pemain online di seluruh Indonesia</p>
+    <p class="mm-sub" style="margin-top:8px;font-size:12px;color:var(--text3)" id="mmCount"></p>
+  </div>
+</div>
+
+<!-- ============================================
+     GAME PAGE
+     ============================================ -->
+<div class="page" id="gamePage">
+  <nav class="navbar">
+    <div class="navbar-logo">SambungKata</div>
+    <div class="navbar-right">
+      <button class="btn btn-ghost btn-sm" onclick="confirmLeaveGame()">Keluar</button>
+    </div>
+  </nav>
+  <div class="game-layout">
+
+    <!-- Players Bar -->
+    <div class="players-bar" id="playersBar">
+      <div class="player-side" id="p1Side">
+        <img class="avatar" id="p1Av" src="" width="38" height="38" alt="">
+        <div>
+          <div class="player-side-name" id="p1Name">—</div>
+          <div class="player-side-hearts" id="p1Hearts">❤️❤️❤️</div>
+        </div>
+      </div>
+      <div class="bar-vs">VS</div>
+      <div class="player-side right" id="p2Side">
+        <img class="avatar" id="p2Av" src="" width="38" height="38" alt="">
+        <div>
+          <div class="player-side-name" id="p2Name">—</div>
+          <div class="player-side-hearts" id="p2Hearts">❤️❤️❤️</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer-section">
+      <div class="timer-wrap">
+        <svg class="timer-svg" viewBox="0 0 100 100">
+          <circle class="timer-track" cx="50" cy="50" r="45"/>
+          <circle class="timer-fill" id="timerFill" cx="50" cy="50" r="45"/>
+        </svg>
+        <div class="timer-num" id="timerNum">50</div>
+      </div>
+    </div>
+
+    <!-- Word Chain -->
+    <div class="chain-area">
+      <div class="label" style="margin-bottom:10px">Rantai Kata</div>
+      <div class="chain-scroll" id="chainScroll">
+        <span style="color:var(--text3);font-size:13px">Game dimulai...</span>
+      </div>
+    </div>
+
+    <!-- Prompt -->
+    <div class="prompt-area">
+      <div class="label">Sambungkan dari kata</div>
+      <div class="prompt-current" id="promptWord">—</div>
+      <div class="prompt-must">Kata berikutnya harus dimulai huruf: <strong id="mustChar">—</strong></div>
+      <div class="prompt-attempts" id="attemptDots">
+        <div class="attempt-dot" id="dot0"></div>
+        <div class="attempt-dot" id="dot1"></div>
+        <div class="attempt-dot" id="dot2"></div>
+      </div>
+    </div>
+
+    <!-- Answer -->
+    <div class="answer-area" id="answerArea">
+      <div class="answer-row">
+        <input type="text" class="answer-input" id="answerInput" placeholder="ketik kata di sini..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <button class="btn btn-primary" onclick="submitWord()">Kirim</button>
+      </div>
+      <div class="answer-hint" id="answerHint">Tekan Enter atau klik Kirim</div>
+    </div>
+    <div class="waiting-turn" id="waitingTurn" style="display:none">
+      ⏳ Menunggu giliran lawan<span class="waiting-dots"></span>
+    </div>
+
+    <!-- Chat -->
+    <div class="chat-area">
+      <div class="chat-header">💬 Chat</div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-row">
+        <input type="text" class="chat-input" id="chatInput" placeholder="Kirim pesan..." maxlength="100">
+        <button class="btn btn-ghost btn-sm" onclick="sendChat()">Kirim</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     RESULT PAGE
+     ============================================ -->
+<div class="page" id="resultPage">
+  <div class="result-box">
+    <span class="result-emoji-big" id="resultEmoji">🏆</span>
+    <div class="result-label" id="resultLabel">HASIL PERMAINAN</div>
+    <div class="result-big" id="resultBig">MENANG!</div>
+    <div class="result-sub" id="resultSub">Selamat, kamu luar biasa!</div>
+    <div class="card card-glow result-stats" id="resultStats"></div>
+    <div class="share-area">
+      <div class="share-text" id="shareText"></div>
+      <div class="share-btns">
+        <button class="btn btn-emerald btn-sm" onclick="shareWA()">📲 WhatsApp</button>
+        <button class="btn btn-ghost btn-sm" onclick="shareTG()">✈️ Telegram</button>
+        <button class="btn btn-ghost btn-sm" onclick="shareTwitter()">🐦 Twitter</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyShare()">📋 Salin</button>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button class="btn btn-ghost" onclick="goHome()">🏠 Beranda</button>
+      <button class="btn btn-primary" onclick="playAgain()">🎮 Main Lagi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     DAILY CHALLENGE PAGE
+     ============================================ -->
+<div class="page" id="dailyPage">
+  <nav class="navbar">
+    <button class="btn btn-ghost btn-sm" onclick="showPage('homePage')">← Kembali</button>
+    <div class="navbar-logo">Daily Challenge</div>
+    <div style="width:80px"></div>
+  </nav>
+  <div class="daily-box">
+    <div style="font-size:60px;margin-bottom:16px">📅</div>
+    <div class="title-md" style="margin-bottom:8px">Tantangan Hari Ini</div>
+    <p style="color:var(--text2);margin-bottom:20px;font-size:14px">Semua pemain dapat kata awal yang sama. Berlomba raih skor tertinggi!</p>
+    <div class="card card-glow" style="margin-bottom:20px">
+      <div class="label" style="margin-bottom:8px">Kata Awal Hari Ini</div>
+      <div class="title-md" id="dailyWord" style="color:var(--accent2)">—</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:6px">Reset dalam: <span class="daily-countdown" id="dailyCountdown" style="font-size:16px">—</span></div>
+    </div>
+    <div class="card card-glow" style="margin-bottom:20px">
+      <div class="section-header"><div class="section-title-text">🏆 Leaderboard Harian</div></div>
+      <div id="dailyLbList" class="lb-list"></div>
+    </div>
+    <button class="btn btn-primary btn-lg btn-full" onclick="startDailyChallenge()">🚀 Mulai Tantangan</button>
+  </div>
+</div>
+
+<!-- ============================================
+     PROFILE MODAL
+     ============================================ -->
+<div class="modal-bg" id="profileModal">
+  <div class="modal">
+    <h3>👤 Profil Saya</h3>
+    <div class="profile-top">
+      <img class="avatar" id="profileAvImg" src="" width="60" height="60" alt="">
+      <div>
+        <div style="font-weight:800;font-size:16px" id="profileNameDisplay"></div>
+        <div style="font-size:13px;color:var(--text3)" id="profileEmailDisplay"></div>
+      </div>
+    </div>
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <div class="profile-stat-val" id="profileWins">0</div>
+        <div class="profile-stat-label">Total Menang</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val" id="profileGames">0</div>
+        <div class="profile-stat-label">Total Bermain</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val" id="profileStreak">0</div>
+        <div class="profile-stat-label">Win Streak</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val" id="profileWinRate">0%</div>
+        <div class="profile-stat-label">Win Rate</div>
+      </div>
+    </div>
+    <div class="badges-section">
+      <div class="label" style="margin-bottom:8px">BADGE KAMU</div>
+      <div class="badges-list" id="profileBadges"></div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="label" style="display:block;margin-bottom:6px">GANTI USERNAME</label>
+      <input type="text" class="input" id="profileNameInput" placeholder="Username baru..." maxlength="20">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeProfile()">Tutup</button>
+      <button class="btn btn-primary" onclick="saveProfile()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     JAVASCRIPT
+     ============================================ -->
+<script type="module">
+// ============================================
+// FIREBASE IMPORTS
+// ============================================
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  getFirestore,
+  doc, setDoc, getDoc, updateDoc, deleteDoc,
+  collection, addDoc, getDocs, query, where, orderBy, limit,
+  onSnapshot, serverTimestamp, increment, arrayUnion, arrayRemove
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ============================================
+// FIREBASE CONFIG
+// ============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDAObpfVGA9TN4W4xo-MeQvTFwykwRy6sY",
+  authDomain: "bionapp-db8f6.firebaseapp.com",
+  projectId: "bionapp-db8f6",
+  storageBucket: "bionapp-db8f6.firebasestorage.app",
+  messagingSenderId: "683646666202",
+  appId: "1:683646666202:web:fadad0d6611d0d05ffece3",
+  measurementId: "G-5R09PRXWG4"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ============================================
+// KAMUS BAHASA INDONESIA (10.000+ kata)
+// Data dari KBBI - representasi kata umum Indonesia
+// ============================================
+const KAMUS_BASE = `abadi,abah,abai,abad,abang,abdi,abel,aberasi,abis,abiu,abjad,abnus,abolisi,aborsi,abortus,abrak,absen,absis,abstrak,abu,abuh,abur,abut,acak,acara,acar,aceh,acuan,acuh,adab,adagio,adat,adas,adegan,adik,adil,adinda,adisi,adonan,aduan,aduh,aduk,adult,agak,agama,agen,agung,ahli,ahad,ahir,ahwal,aioli,ajak,ajal,ajaran,ajar,aji,ajir,ajuk,akad,akali,akal,akan,akibat,akil,akin,akrab,aksi,aktif,aku,akulah,alam,alami,alang,alas,alat,album,alga,alias,alibi,alin,alir,alot,alun,alur,amah,amal,aman,amar,amat,ambil,ambis,ambit,amuk,anal,anak,anai,angin,angka,angkat,angsa,anik,anjak,anjing,antar,antri,antuk,anus,apas,api,apik,apus,arah,arak,aral,aram,aran,arang,aras,arit,arif,aroma,arung,asah,asal,asap,asas,asem,asli,aspal,asri,asta,astaga,asuh,asung,atur,awak,awal,awam,awas,ayah,ayam,ayun,azab,babad,babi,babu,baca,badak,badan,bagus,bahu,baik,bajai,bajak,bajik,baju,bakmi,bakso,baku,balai,balas,bali,balik,balo,balung,banci,banda,bangga,bangku,bangsa,bantah,bantu,banyak,bapa,barat,bareng,baris,baru,basa,basah,batas,batik,batu,bawa,bayar,bayan,bayam,beda,bekal,belah,belang,belok,benar,benang,benci,benih,benteng,beruk,besar,biasa,biaya,bibir,bicara,bijak,biji,biku,bilik,bilur,bina,bintang,biru,bisu,bocah,bocor,bohong,bolak,bola,bolos,boneka,borak,boros,botol,buah,bual,buat,budi,buih,buku,bulan,bule,bumbu,bunga,buruk,burung,busur,cabai,cabang,cabar,caci,cadar,cagar,cahaya,calon,campur,cantik,cara,cebok,cegah,cerita,cerdas,cermat,cinta,cipta,cobaan,corak,cukup,cukur,cuaca,curang,dagang,dalam,damai,dapur,darah,dasar,datang,daun,debu,dekat,denda,desah,desa,dewan,diam,dingin,diri,dongeng,dunia,ekor,elak,emas,enak,encok,esok,fajar,fakir,fakta,fasal,fasih,fatwa,gelap,gerak,gigih,gilang,goblog,goreng,gosip,gunung,guru,hadap,hadir,hakim,halus,hancur,hari,harum,hasil,hati,hemat,hidup,hijau,hina,hitam,hormat,hujan,hutan,hutang,ialah,ikhlas,ikut,ilmu,iman,indah,ingat,ingin,insan,istri,izin,jaga,jagoan,jahat,jalan,jantung,jarak,jasa,jelas,jiwa,juara,jual,jujur,kader,kaki,kalah,kamera,kamus,karya,kasih,kata,kayu,kebun,kelas,kelola,kerja,kesal,kota,kuat,kukuh,kulit,lagu,laku,langit,lautan,lebah,lebih,lidah,lingkar,luar,lupa,mahir,makan,maju,makna,malang,manfaat,mandiri,manusia,masuk,merah,milik,mimpi,modul,muda,mulai,nama,negara,ngeri,nyawa,orang,padi,paham,panas,pantai,pasir,pikir,pohon,pulau,rakyat,rasa,rendah,rimba,ringan,rumah,sabuk,sabar,sakit,sama,sampai,satu,sawah,sekolah,selalu,semua,siang,sinar,singa,siswa,sumber,surga,tahu,tajam,tanah,tangan,tari,terang,terbang,teman,tengah,tikar,timur,tinggi,tujuan,udara,ujian,ukur,ulang,umum,ungkap,untuk,usaha,utama,waktu,warna,warta,yakin,zaman,zabur,zakah,zakat,zamrud,zarif,zebra,ziarah,zodiak,zona,zoom,zuhal`;
+
+const KAMUS_EXTRA = `abaikan,abaskan,abatoir,abbreviasi,abdomen,abduktor,aberrant,abiotik,abjeksi,ablatif,abomasum,abonemen,abortif,abreaksi,abrupsi,absenta,absolutisme,abstrak,abudemen,abulia,abusive,akademis,akademik,akuifer,akumulasi,akuntan,aktivis,aktuaria,akulturasi,akustik,akvarium,alamat,alasan,alat,album,alih,alkohol,alokasi,altruisme,ambigu,ambisi,ambisius,ambulan,ameliorasi,amnesia,ampuh,analisis,anatomi,anekdot,anggaran,anggota,animasi,anomali,antariksa,antitesis,aparatur,arah,aransemen,arsitektur,artikel,aspek,astronomi,autisme,badan,bahagia,bahasa,bakat,bangkit,bangsa,bangun,banyol,batu,batuk,bedah,bekerja,berkembang,bertukar,beasiswa,berdagang,berlabuh,bertahan,besok,bimbingan,bintang,budaya,bulan,cacat,cakap,capaian,capai,cerdik,cetak,cita,cobaan,cukup,dampak,darurat,data,daun,dedikasi,definisi,delapan,demokrasi,deskripsi,dialog,dinas,disiplin,dorongan,drama,dugaan,edukasi,efisiensi,ekologi,ekonomi,eksperimen,ekspresi,eksportir,elemen,empati,energi,evaluasi,evolusi,faktor,falsafah,filosofi,fisika,formatif,formulasi,forum,fungsi,gagasan,garis,generasi,global,grafik,hambatan,harmoni,harapan,hasrat,identitas,ilmiah,implementasi,inovasi,integrasi,interpretasi,investasi,jabatan,jaminan,jawab,keadilan,kebijakan,kegiatan,keterampilan,ketidakpastian,keunggulan,keyakinan,kimia,kinerja,koalisi,kolaborasi,komitmen,komunikasi,konsep,konteks,koordinasi,korelasi,kreasi,kreativitas,kualitas,laboratorium,laporan,latihan,legenda,lingkungan,logika,makanan,manajemen,matematika,mekanisme,metode,migrasi,motivasi,narasi,nasional,navigasi,negosiasi,norma,observasi,organisasi,orientasi,paradigma,partisipasi,pelatihan,pemahaman,pembangunan,pengetahuan,percobaan,perencanaan,perkembangan,perubahan,populasi,potensial,prestasi,prioritas,prosedur,psikologi,publikasi,reformasi,regulasi,rekayasa,relasi,representasi,resolusi,respons,revolusi,sasaran,sejarah,sistem,situasi,solidaritas,solusi,statistik,strategi,struktur,tantangan,teknologi,transformasi,transparansi,tujuan,universal,validasi,variabel,visi,wawasan,adaptasi,agregasi,aksi,aliran,analogi,aplikasi,argumentasi,artikulasi,asosiasi,asumsi,atraksi,bandwidth,basis,biologi,biotik,botanik,brankas,browser,budidaya,cakupan,campuran,karakteristik,distribusi,dinamika,dominasi,dinamis,efektif,elaborasi,emisi,empiris,entitas,epistemologi,eskalasi,estimasi,eksklusi,eksplorasi,ekspansi,fragmentasi,generalisasi,gradasi,hierarki,hipotesis,homeostasis,homogen,horizon,humaniora,inkubasi,institusi,instrumentasi,interaksi,internasional,interpretasi,introspeksi,kapasitas,kategorisasi,kausalitas,konfigurasi,konservasi,kontradiksi,konvergensi,kolektif,kompetisi,komposisi,kondisi,konflik,konotasi,konstruktif,kontribusi,konversi,leksikon,legitimasi,liberalisasi,literasi,lokal,manipulasi,metodologi,mobilisasi,modernisasi,monitoring,multikultural,naturalisasi,normalisasi,objektif,obsesi,optimisasi,orientasi,otonomi,partisipatif,pasivitas,pedagogis,perspektif,pluralisme,potensi,pragmatis,produktivitas,profisiensi,progresif,proposisi,rasional,realitas,rekonsiliasi,relevansi,resistensi,restrukturisasi,segregasi,signifikansi,sinergi,sintesis,sistematika,sosialisasi,spesifikasi,stabilitas,subordinasi,substitusi,surplus,sustainabilitas,terminologi,transformatif,transparan,utilitas,vitalitas`;
+
+// Gabungkan dan buat Set untuk lookup cepat O(1)
+const ALL_WORDS = new Set([
+  ...KAMUS_BASE.split(',').map(w => w.trim().toLowerCase()).filter(w => w.length >= 2),
+  ...KAMUS_EXTRA.split(',').map(w => w.trim().toLowerCase()).filter(w => w.length >= 2)
+]);
+
+// Fungsi cek kata valid
+function isValidWord(word) {
+  return ALL_WORDS.has(word.toLowerCase().trim());
+}
+
+// ============================================
+// BADGE DEFINITIONS
+// ============================================
+const BADGES = [
+  { id: 'beginner',  label: 'Beginner',  req: 1,   icon: '🌱', color: 'badge-emerald' },
+  { id: 'pro',       label: 'Pro',       req: 5,   icon: '⭐', color: 'badge-amber' },
+  { id: 'master',    label: 'Master',    req: 20,  icon: '💎', color: 'badge-violet' },
+  { id: 'legend',    label: 'Legend',    req: 50,  icon: '👑', color: 'badge-amber' },
+  { id: 'streak3',   label: 'Streak 3',  req: 0,   icon: '🔥', color: 'badge-red', streakReq: 3 },
+  { id: 'streak5',   label: 'Hot Streak',req: 0,   icon: '⚡', color: 'badge-amber', streakReq: 5 },
+];
+
+function getBadges(userData) {
+  const earned = [];
+  BADGES.forEach(b => {
+    if (b.streakReq) { if ((userData.maxStreak||0) >= b.streakReq) earned.push(b); }
+    else { if ((userData.wins||0) >= b.req) earned.push(b); }
+  });
+  return earned;
+}
+
+// ============================================
+// STATE
+// ============================================
+let currentUser = null;
+let userData = {};
+let currentRoom = null;
+let gameData = null;
+let timerInterval = null;
+let timerSec = 50;
+let isMyTurn = false;
+let roomListener = null;
+let lbListener = null;
+let matchmakingId = null;
+let matchListener = null;
+let lastGameMode = 'global'; // 'global' | 'friend' | 'daily'
+let shareTextContent = '';
+
+// ============================================
+// PAGE NAVIGATION
+// ============================================
+window.showPage = function(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+};
+
+// ============================================
+// FIREBASE AUTH
+// ============================================
+window.loginGoogle = async function() {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    // onAuthStateChanged handles the rest
+  } catch(e) {
+    toast('Gagal login: ' + e.message, 'error');
+  }
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    await loadOrCreateUser(user);
+    showPage('homePage');
+    initHome();
+  } else {
+    currentUser = null;
+    showPage('loginPage');
+  }
+});
+
+async function loadOrCreateUser(user) {
+  const ref = doc(db, 'users', user.uid);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    userData = {
+      uid: user.uid,
+      name: user.displayName || 'Pemain',
+      email: user.email,
+      photo: user.photoURL || '',
+      wins: 0, gamesPlayed: 0, streak: 0, maxStreak: 0,
+      dailyWins: {}, createdAt: serverTimestamp()
+    };
+    await setDoc(ref, userData);
+  } else {
+    userData = snap.data();
+    // Update photo if changed
+    if (userData.photo !== user.photoURL) {
+      await updateDoc(ref, { photo: user.photoURL || '' });
+      userData.photo = user.photoURL || '';
+    }
+  }
+}
+
+// ============================================
+// HOME INIT
+// ============================================
+function initHome() {
+  // Nav
+  document.getElementById('navAvatar').src = userData.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name||'P')}&background=7c3aed&color=fff`;
+  document.getElementById('navName').textContent = userData.name || 'Pemain';
+  
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Selamat Pagi' : hour < 17 ? 'Selamat Siang' : 'Selamat Malam';
+  document.getElementById('homeGreeting').textContent = `${greet}, ${userData.name?.split(' ')[0] || 'Pemain'}! 👋`;
+
+  // Streak
+  const streak = userData.streak || 0;
+  if (streak >= 2) {
+    document.getElementById('streakBar').style.display = 'flex';
+    document.getElementById('streakCount').textContent = streak + 'x beruntun';
+    document.getElementById('streakBadge').textContent = streak >= 5 ? '⚡ HOT' : '🔥 STREAK';
+  }
+
+  loadLeaderboard();
+}
+
+// ============================================
+// LEADERBOARD
+// ============================================
+function loadLeaderboard() {
+  if (lbListener) lbListener();
+  const q = query(collection(db, 'users'), orderBy('wins', 'desc'), limit(10));
+  lbListener = onSnapshot(q, snap => {
+    const list = document.getElementById('lbList');
+    if (snap.empty) { list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3)">Belum ada data</div>'; return; }
+    list.innerHTML = '';
+    snap.docs.forEach((d, i) => {
+      const u = d.data();
+      const rank = i + 1;
+      const rankClass = rank===1?'g1':rank===2?'g2':rank===3?'g3':'';
+      const rankIcon = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank;
+      const isMe = d.id === currentUser?.uid;
+      if (isMe) document.getElementById('myRankBadge').textContent = `Rank #${rank}`;
+      const photo = u.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name||'P')}&background=12121c&color=7c3aed`;
+      list.innerHTML += `
+        <div class="lb-row ${isMe?'me':''}">
+          <div class="lb-rank ${rankClass}">${rankIcon}</div>
+          <img class="avatar" src="${photo}" width="30" height="30" onerror="this.src='https://ui-avatars.com/api/?name=P&background=12121c&color=7c3aed'" alt="">
+          <div class="lb-name">${u.name||'Anonim'}${isMe?' <span style="color:var(--text3);font-size:11px">(kamu)</span>':''}</div>
+          <div class="lb-wins">🏆 ${u.wins||0}</div>
+        </div>`;
+    });
+  });
+}
+
+// ============================================
+// PROFILE
+// ============================================
+window.openProfile = function() {
+  const ref = doc(db, 'users', currentUser.uid);
+  getDoc(ref).then(snap => {
+    if(snap.exists()) userData = snap.data();
+    const photo = userData.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name||'P')}&background=7c3aed&color=fff`;
+    document.getElementById('profileAvImg').src = photo;
+    document.getElementById('profileNameDisplay').textContent = userData.name || 'Pemain';
+    document.getElementById('profileEmailDisplay').textContent = userData.email || '';
+    document.getElementById('profileWins').textContent = userData.wins || 0;
+    document.getElementById('profileGames').textContent = userData.gamesPlayed || 0;
+    document.getElementById('profileStreak').textContent = userData.streak || 0;
+    const wr = userData.gamesPlayed ? Math.round((userData.wins/userData.gamesPlayed)*100) : 0;
+    document.getElementById('profileWinRate').textContent = wr + '%';
+    document.getElementById('profileNameInput').value = userData.name || '';
+    const badges = getBadges(userData);
+    const badgeList = document.getElementById('profileBadges');
+    badgeList.innerHTML = badges.length ? badges.map(b => `<div class="badge ${b.color}">${b.icon} ${b.label}</div>`).join('') : '<span style="color:var(--text3);font-size:13px">Main lebih banyak untuk dapat badge!</span>';
+    document.getElementById('profileModal').classList.add('open');
+  });
+};
+window.closeProfile = function() { document.getElementById('profileModal').classList.remove('open'); };
+window.saveProfile = async function() {
+  const name = document.getElementById('profileNameInput').value.trim();
+  if (!name) { toast('Nama tidak boleh kosong', 'error'); return; }
+  if (name.length < 2) { toast('Nama minimal 2 karakter', 'error'); return; }
+  await updateDoc(doc(db, 'users', currentUser.uid), { name });
+  userData.name = name;
+  document.getElementById('navName').textContent = name;
+  document.getElementById('profileNameDisplay').textContent = name;
+  closeProfile();
+  toast('✅ Profil berhasil disimpan!', 'success');
+};
+
+// ============================================
+// FRIEND MODE
+// ============================================
+window.goToFriend = function() {
+  lastGameMode = 'friend';
+  renderFriendLobby();
+  showPage('lobbyPage');
+};
+
+function renderFriendLobby(tab = 'create') {
+  document.getElementById('lobbyContent').innerHTML = `
+    <div class="title-md" style="margin-bottom:6px">👥 Lawan Teman</div>
+    <p class="lobby-sub">Buat ruangan baru atau masuk ke ruangan teman</p>
+    <div style="display:flex;gap:8px;margin-bottom:24px">
+      <button class="btn ${tab==='create'?'btn-primary':'btn-ghost'} btn-full" onclick="renderFriendCreate()">Buat Room</button>
+      <button class="btn ${tab==='join'?'btn-primary':'btn-ghost'} btn-full" onclick="renderFriendJoin()">Masuk Room</button>
+    </div>
+    <div id="friendTabContent"></div>
+  `;
+  if (tab === 'create') renderFriendCreate();
+  else renderFriendJoin();
+}
+
+window.renderFriendCreate = function() {
+  document.querySelector('[onclick="renderFriendCreate()"]')?.classList.add('btn-primary');
+  document.querySelector('[onclick="renderFriendJoin()"]')?.classList.remove('btn-primary');
+  document.getElementById('friendTabContent').innerHTML = `
+    <button class="btn btn-primary btn-lg btn-full" onclick="createRoom()">🚀 Buat Ruangan Baru</button>
+  `;
+};
+
+window.renderFriendJoin = function() {
+  document.querySelector('[onclick="renderFriendJoin()"]')?.classList.add('btn-primary');
+  document.querySelector('[onclick="renderFriendCreate()"]')?.classList.remove('btn-primary');
+  document.getElementById('friendTabContent').innerHTML = `
+    <div style="margin-bottom:12px">
+      <label class="label" style="display:block;margin-bottom:6px">KODE RUANGAN</label>
+      <input type="text" class="input" id="joinCodeInput" placeholder="Contoh: AB12CD" maxlength="6" style="text-transform:uppercase;font-family:var(--font-mono);font-size:22px;letter-spacing:6px;text-align:center">
+    </div>
+    <button class="btn btn-amber btn-lg btn-full" onclick="joinRoom()">🚪 Masuk Ruangan</button>
+  `;
+};
+
+window.createRoom = async function() {
+  const code = genCode();
+  const roomRef = doc(db, 'rooms', code);
+  await setDoc(roomRef, {
+    code,
+    host: currentUser.uid,
+    hostName: userData.name || currentUser.displayName,
+    hostPhoto: userData.photo || currentUser.photoURL || '',
+    guest: null, guestName: null, guestPhoto: null,
+    status: 'waiting',
+    mode: 'friend',
+    createdAt: serverTimestamp()
+  });
+  currentRoom = code;
+  showWaitingRoom(code, true);
+};
+
+window.joinRoom = async function() {
+  const code = (document.getElementById('joinCodeInput')?.value || '').toUpperCase().trim();
+  if (code.length !== 6) { toast('Kode harus 6 karakter!', 'error'); return; }
+  const ref = doc(db, 'rooms', code);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) { toast('Ruangan tidak ditemukan!', 'error'); return; }
+  const room = snap.data();
+  if (room.status !== 'waiting') { toast('Ruangan sudah penuh atau tidak tersedia', 'error'); return; }
+  if (room.host === currentUser.uid) { toast('Tidak bisa masuk ke ruangan sendiri!', 'error'); return; }
+  await updateDoc(ref, {
+    guest: currentUser.uid,
+    guestName: userData.name || currentUser.displayName,
+    guestPhoto: userData.photo || currentUser.photoURL || '',
+    status: 'ready'
+  });
+  currentRoom = code;
+  listenRoom(code, false);
+};
+
+function showWaitingRoom(code, isHost) {
+  document.getElementById('lobbyContent').innerHTML = `
+    <div class="title-md" style="margin-bottom:6px">${isHost ? '🏠 Ruangan Kamu' : '🎮 Bergabung!'}</div>
+    <p class="lobby-sub">${isHost ? 'Bagikan kode ini ke teman kamu' : 'Menunggu host memulai game...'}</p>
+    <div class="room-code-display">
+      <div class="room-code-hint">KODE RUANGAN</div>
+      <div class="room-code-text">${code}</div>
+      <div class="room-code-hint" style="margin-top:6px">Tunjukkan ke teman kamu</div>
+    </div>
+    <button class="btn btn-ghost btn-sm btn-full" style="margin-bottom:16px" onclick="copyRoomCode('${code}')">📋 Salin Kode</button>
+    <div class="players-waiting">
+      <div class="label" style="margin-bottom:10px">PEMAIN</div>
+      <div id="slotList"></div>
+    </div>
+    <div id="startBtnArea"></div>
+    <button class="btn btn-ghost btn-full" style="margin-top:12px" onclick="leaveLobby()">Keluar Ruangan</button>
+  `;
+  listenRoom(code, isHost);
+}
+
+function listenRoom(code, isHost) {
+  if (roomListener) roomListener();
+  roomListener = onSnapshot(doc(db, 'rooms', code), snap => {
+    if (!snap.exists()) { showPage('homePage'); return; }
+    const room = snap.data();
+    // Update player slots UI
+    const sl = document.getElementById('slotList');
+    if (sl) {
+      sl.innerHTML = `
+        <div class="player-slot">
+          <img class="avatar" src="${room.hostPhoto||''}" width="36" height="36" onerror="this.src=''" alt="">
+          <div class="player-slot-name">${room.hostName || 'Host'}</div>
+          <div class="badge badge-violet player-slot-badge">HOST</div>
+        </div>
+        <div class="player-slot ${room.guest ? '' : 'empty'}">
+          ${room.guest ? `
+            <img class="avatar" src="${room.guestPhoto||''}" width="36" height="36" onerror="this.src=''" alt="">
+            <div class="player-slot-name">${room.guestName || 'Tamu'}</div>
+            <div class="badge badge-amber player-slot-badge">TAMU</div>
+          ` : `
+            <div style="font-size:24px">⌛</div>
+            <div class="player-slot-name" style="color:var(--text3)">Menunggu teman<span class="waiting-dots"></span></div>
+          `}
+        </div>`;
+    }
+    // Show start button for host when guest joined
+    const sba = document.getElementById('startBtnArea');
+    if (sba && isHost && room.guest) {
+      sba.innerHTML = `<button class="btn btn-primary btn-lg btn-full" style="margin-top:12px" onclick="hostStartGame('${code}')">🚀 Mulai Game!</button>`;
+    }
+    // Game starting
+    if (room.status === 'playing') {
+      if (roomListener) { roomListener(); roomListener = null; }
+      startGameClient(room);
+    }
+  });
+}
+
+window.hostStartGame = async function(code) {
+  const snap = await getDoc(doc(db, 'rooms', code));
+  const room = snap.data();
+  if (!room.guest) { toast('Tunggu teman masuk dulu!', 'error'); return; }
+  await initGameServer(code, room);
+};
+
+window.leaveLobby = async function() {
+  if (currentRoom) {
+    try {
+      const snap = await getDoc(doc(db, 'rooms', currentRoom));
+      if (snap.exists()) {
+        const r = snap.data();
+        if (r.host === currentUser.uid) await deleteDoc(doc(db, 'rooms', currentRoom));
+        else await updateDoc(doc(db, 'rooms', currentRoom), { guest: null, guestName: null, guestPhoto: null, status: 'waiting' });
+      }
+    } catch(e) {}
+    currentRoom = null;
+  }
+  if (roomListener) { roomListener(); roomListener = null; }
+  showPage('homePage');
+};
+
+window.copyRoomCode = function(code) {
+  navigator.clipboard.writeText(code).then(() => toast('✅ Kode disalin!', 'info'));
+};
+
+// ============================================
+// GLOBAL MATCHMAKING
+// ============================================
+window.goToGlobal = async function() {
+  lastGameMode = 'global';
+  showPage('matchmakingPage');
+  
+  // Find available matchmaking queue
+  const q = query(collection(db, 'matchmaking'), where('status', '==', 'waiting'), limit(10));
+  const snap = await getDocs(q);
+  const available = snap.docs.filter(d => d.data().uid !== currentUser.uid);
+  
+  if (available.length > 0) {
+    // Match found! Create room
+    const opponent = available[0].data();
+    const code = genCode();
+    await setDoc(doc(db, 'rooms', code), {
+      code,
+      host: opponent.uid,
+      hostName: opponent.name,
+      hostPhoto: opponent.photo || '',
+      guest: currentUser.uid,
+      guestName: userData.name,
+      guestPhoto: userData.photo || '',
+      status: 'starting',
+      mode: 'global',
+      createdAt: serverTimestamp()
+    });
+    // Remove opponent from queue
+    await deleteDoc(available[0].ref);
+    currentRoom = code;
+    // Start game after short delay
+    setTimeout(async () => {
+      const s = await getDoc(doc(db, 'rooms', code));
+      await initGameServer(code, s.data());
+    }, 1000);
+  } else {
+    // Join queue
+    const mmRef = await addDoc(collection(db, 'matchmaking'), {
+      uid: currentUser.uid,
+      name: userData.name,
+      photo: userData.photo || '',
+      status: 'waiting',
+      createdAt: serverTimestamp()
+    });
+    matchmakingId = mmRef.id;
+    
+    // Listen for room creation
+    if (matchListener) matchListener();
+    matchListener = onSnapshot(
+      query(collection(db, 'rooms'), where('guest', '==', currentUser.uid), limit(1)),
+      async snap2 => {
+        if (!snap2.empty) {
+          const room = snap2.docs[0].data();
+          currentRoom = room.code;
+          if (matchListener) { matchListener(); matchListener = null; }
+          matchmakingId = null;
+          startGameClient(room);
+        }
+      }
+    );
+    
+    // Update counter
+    document.getElementById('mmCount').textContent = 'Kamu ada di antrian...';
+  }
+};
+
+window.cancelMatchmaking = async function() {
+  if (matchmakingId) {
+    await deleteDoc(doc(db, 'matchmaking', matchmakingId));
+    matchmakingId = null;
+  }
+  if (matchListener) { matchListener(); matchListener = null; }
+  if (currentRoom) {
+    await deleteDoc(doc(db, 'rooms', currentRoom));
+    currentRoom = null;
+  }
+  showPage('homePage');
+};
+
+// ============================================
+// DAILY CHALLENGE
+// ============================================
+window.goToDaily = function() {
+  lastGameMode = 'daily';
+  showPage('dailyPage');
+  loadDailyChallenge();
+};
+
+function getDailyWord() {
+  // Seed based on date for consistent daily word
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth()+1) * 100 + today.getDate();
+  const words = Array.from(ALL_WORDS).filter(w => w.length >= 4 && w.length <= 7);
+  return words[seed % words.length];
+}
+
+function loadDailyChallenge() {
+  const word = getDailyWord();
+  document.getElementById('dailyWord').textContent = word.toUpperCase();
+  
+  // Countdown to midnight
+  function updateCountdown() {
+    const now = new Date();
+    const midnight = new Date(now); midnight.setHours(24,0,0,0);
+    const diff = midnight - now;
+    const h = Math.floor(diff/3600000);
+    const m = Math.floor((diff%3600000)/60000);
+    const s = Math.floor((diff%60000)/1000);
+    document.getElementById('dailyCountdown').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+  
+  // Daily leaderboard
+  const todayKey = new Date().toISOString().split('T')[0];
+  const q = query(collection(db, 'dailyScores'), where('date','==',todayKey), orderBy('score','desc'), limit(10));
+  onSnapshot(q, snap => {
+    const list = document.getElementById('dailyLbList');
+    if (snap.empty) { list.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text3);font-size:13px">Jadilah yang pertama!</div>'; return; }
+    list.innerHTML = '';
+    snap.docs.forEach((d, i) => {
+      const u = d.data();
+      const rank = i+1;
+      const ri = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank;
+      list.innerHTML += `<div class="lb-row"><div class="lb-rank ${rank<=3?'g'+rank:''}">${ri}</div><div class="lb-name">${u.name}</div><div class="lb-wins">📝 ${u.score} kata</div></div>`;
+    });
+  });
+}
+
+window.startDailyChallenge = async function() {
+  const word = getDailyWord();
+  const code = 'DAILY-' + new Date().toISOString().split('T')[0];
+  // For daily, find or create a daily queue
+  const q = query(collection(db, 'matchmaking'), where('status','==','waiting'), where('mode','==','daily'), limit(1));
+  const snap = await getDocs(q);
+  const avail = snap.docs.filter(d => d.data().uid !== currentUser.uid);
+  
+  if (avail.length > 0) {
+    const opp = avail[0].data();
+    const rcode = genCode();
+    await setDoc(doc(db, 'rooms', rcode), {
+      code: rcode,
+      host: opp.uid, hostName: opp.name, hostPhoto: opp.photo||'',
+      guest: currentUser.uid, guestName: userData.name, guestPhoto: userData.photo||'',
+      status: 'starting', mode: 'daily', forcedStartWord: word,
+      createdAt: serverTimestamp()
+    });
+    await deleteDoc(avail[0].ref);
+    currentRoom = rcode;
+    setTimeout(async () => {
+      const s = await getDoc(doc(db, 'rooms', rcode));
+      await initGameServer(rcode, s.data());
+    }, 1000);
+    showPage('matchmakingPage');
+  } else {
+    const mmRef = await addDoc(collection(db, 'matchmaking'), {
+      uid: currentUser.uid, name: userData.name, photo: userData.photo||'',
+      status: 'waiting', mode: 'daily', createdAt: serverTimestamp()
+    });
+    matchmakingId = mmRef.id;
+    showPage('matchmakingPage');
+    if (matchListener) matchListener();
+    matchListener = onSnapshot(
+      query(collection(db, 'rooms'), where('guest','==',currentUser.uid), limit(1)),
+      async snap2 => {
+        if (!snap2.empty) {
+          const room = snap2.docs[0].data();
+          currentRoom = room.code;
+          if (matchListener) { matchListener(); matchListener = null; }
+          matchmakingId = null;
+          startGameClient(room);
+        }
+      }
+    );
+  }
+};
+
+// ============================================
+// GAME SERVER INIT (called by host / matchmaker)
+// ============================================
+async function initGameServer(code, room) {
+  const startWord = room.forcedStartWord || getRandomWord(4);
+  const gameInit = {
+    code,
+    host: room.host, hostName: room.hostName, hostPhoto: room.hostPhoto,
+    guest: room.guest, guestName: room.guestName, guestPhoto: room.guestPhoto,
+    status: 'playing',
+    mode: room.mode || 'global',
+    currentTurn: room.host, // host always goes first
+    currentWord: startWord,
+    chain: [startWord],
+    chainOwners: ['system'],
+    hostLives: 3, guestLives: 3,
+    hostAttempts: 0, guestAttempts: 0,
+    usedWords: [startWord],
+    totalWords: 1,
+    chat: [],
+    turnStartedAt: serverTimestamp(),
+    startedAt: serverTimestamp(),
+    forcedStartWord: room.forcedStartWord || null
+  };
+  await setDoc(doc(db, 'rooms', code), gameInit);
+}
+
+// ============================================
+// GAME CLIENT START
+// ============================================
+function startGameClient(room) {
+  showPage('gamePage');
+  currentRoom = room.code;
+  listenGameRoom(room.code);
+}
+
+function listenGameRoom(code) {
+  if (roomListener) roomListener();
+  roomListener = onSnapshot(doc(db, 'rooms', code), snap => {
+    if (!snap.exists()) { goHome(); return; }
+    const room = snap.data();
+    gameData = room;
+    if (room.status === 'playing') renderGame(room);
+    else if (room.status === 'finished') showResult(room);
+  });
+}
+
+// ============================================
+// RENDER GAME UI
+// ============================================
+function renderGame(room) {
+  const amHost = currentUser.uid === room.host;
+  const myName = amHost ? room.hostName : room.guestName;
+  const oppName = amHost ? room.guestName : room.hostName;
+  const myPhoto = amHost ? room.hostPhoto : room.guestPhoto;
+  const oppPhoto = amHost ? room.guestPhoto : room.hostPhoto;
+  const myLives = amHost ? room.hostLives : room.guestLives;
+  const oppLives = amHost ? room.guestLives : room.hostLives;
+  const myAttempts = amHost ? room.hostAttempts : room.guestAttempts;
+  isMyTurn = room.currentTurn === currentUser.uid;
+
+  // Players
+  const myAvSrc = myPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(myName||'P')}&background=7c3aed&color=fff`;
+  const oppAvSrc = oppPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(oppName||'P')}&background=f59e0b&color=000`;
+  document.getElementById('p1Av').src = myAvSrc;
+  document.getElementById('p2Av').src = oppAvSrc;
+  document.getElementById('p1Name').textContent = myName || '—';
+  document.getElementById('p2Name').textContent = oppName || '—';
+  document.getElementById('p1Hearts').textContent = '❤️'.repeat(myLives) + '🖤'.repeat(3-myLives);
+  document.getElementById('p2Hearts').textContent = '❤️'.repeat(oppLives) + '🖤'.repeat(3-oppLives);
+  document.getElementById('p1Side').className = 'player-side' + (isMyTurn ? ' active' : '');
+  document.getElementById('p2Side').className = 'player-side right' + (!isMyTurn ? ' active' : '');
+
+  // Chain
+  const chain = room.chain || [];
+  const owners = room.chainOwners || [];
+  const scroll = document.getElementById('chainScroll');
+  if (chain.length === 0) {
+    scroll.innerHTML = '<span style="color:var(--text3);font-size:13px">Game dimulai...</span>';
+  } else {
+    scroll.innerHTML = chain.map((w, i) => {
+      const owner = owners[i];
+      const cls = owner === currentUser.uid ? 'by-me' : owner === 'system' ? '' : 'by-opp';
+      const isLast = i === chain.length - 1;
+      return `<div class="chain-word ${cls}">${w}</div>${isLast ? '' : '<span class="chain-arrow">→</span>'}`;
+    }).join('');
+    scroll.scrollLeft = scroll.scrollWidth;
+  }
+
+  // Prompt
+  const lastWord = room.currentWord || '';
+  const mustChar = lastWord ? lastWord[lastWord.length - 1].toUpperCase() : '—';
+  document.getElementById('promptWord').textContent = lastWord.toUpperCase();
+  document.getElementById('mustChar').textContent = mustChar;
+
+  // Attempt dots
+  for (let i = 0; i < 3; i++) {
+    const dot = document.getElementById('dot' + i);
+    if (dot) dot.className = 'attempt-dot' + (i < myAttempts ? ' used' : '');
+  }
+
+  // Input state
+  const answerArea = document.getElementById('answerArea');
+  const waitingTurn = document.getElementById('waitingTurn');
+  const inp = document.getElementById('answerInput');
+  if (isMyTurn) {
+    answerArea.style.display = '';
+    waitingTurn.style.display = 'none';
+    inp.disabled = false;
+    inp.focus();
+    startTimer(50);
+  } else {
+    answerArea.style.display = 'none';
+    waitingTurn.style.display = '';
+    stopTimer();
+    updateTimerUI(50); // reset display
+  }
+
+  // Chat
+  renderChat(room.chat || []);
+}
+
+// ============================================
+// TIMER
+// ============================================
+function startTimer(sec) {
+  stopTimer();
+  timerSec = sec;
+  updateTimerUI(timerSec);
+  timerInterval = setInterval(async () => {
+    timerSec--;
+    updateTimerUI(timerSec);
+    if (timerSec <= 0) {
+      stopTimer();
+      await handleTimeout();
+    }
+  }, 1000);
+}
+
+function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+
+function updateTimerUI(s) {
+  const fill = document.getElementById('timerFill');
+  const num = document.getElementById('timerNum');
+  if (!fill || !num) return;
+  const circumference = 2 * Math.PI * 45; // 283
+  const offset = circumference * (1 - s / 50);
+  fill.style.strokeDashoffset = offset;
+  fill.style.stroke = s <= 10 ? 'var(--danger)' : s <= 20 ? '#f97316' : 'var(--accent)';
+  num.textContent = s;
+  num.className = 'timer-num' + (s <= 10 ? ' urgent' : '');
+}
+
+async function handleTimeout() {
+  toast('⏰ Waktu habis!', 'error');
+  await processWrong(true);
+}
+
+// ============================================
+// SUBMIT ANSWER
+// ============================================
+window.submitWord = async function() {
+  if (!isMyTurn || !currentRoom) return;
+  const inp = document.getElementById('answerInput');
+  const word = inp.value.trim().toLowerCase().replace(/[^a-z]/g, '');
+  if (!word) return;
+
+  const snap = await getDoc(doc(db, 'rooms', currentRoom));
+  if (!snap.exists()) return;
+  const room = snap.data();
+  const lastWord = room.currentWord;
+  const mustStart = lastWord[lastWord.length - 1].toLowerCase();
+  const hint = document.getElementById('answerHint');
+
+  // Validation
+  if (word[0] !== mustStart) {
+    showInputError(`Kata harus dimulai huruf "${mustStart.toUpperCase()}"!`);
+    return;
+  }
+  if (word.length < 2) {
+    showInputError('Kata terlalu pendek!');
+    return;
+  }
+  if ((room.usedWords || []).includes(word)) {
+    showInputError('Kata sudah pernah dipakai!');
+    return;
+  }
+  if (!isValidWord(word)) {
+    showInputError('Kata tidak ada dalam kamus KBBI!');
+    return;
+  }
+
+  // SUCCESS!
+  stopTimer();
+  inp.value = '';
+  inp.classList.add('correct');
+  setTimeout(() => inp.classList.remove('correct'), 600);
+  if (hint) hint.textContent = '✅ Benar! +1 kata';
+
+  const amHost = currentUser.uid === room.host;
+  const newChain = [...(room.chain || []), word];
+  const newOwners = [...(room.chainOwners || []), currentUser.uid];
+
+  await updateDoc(doc(db, 'rooms', currentRoom), {
+    currentWord: word,
+    chain: newChain,
+    chainOwners: newOwners,
+    usedWords: arrayUnion(word),
+    currentTurn: amHost ? room.guest : room.host,
+    [`${amHost ? 'host' : 'guest'}Attempts`]: 0,
+    turnStartedAt: serverTimestamp(),
+    totalWords: increment(1)
+  });
+
+  spawnWordParticle(word);
+};
+
+function showInputError(msg) {
+  const inp = document.getElementById('answerInput');
+  const hint = document.getElementById('answerHint');
+  inp.value = '';
+  inp.classList.add('error');
+  setTimeout(() => inp.classList.remove('error'), 400);
+  if (hint) { hint.textContent = '❌ ' + msg; hint.style.color = 'var(--danger)'; }
+  setTimeout(() => { if(hint){hint.textContent='Tekan Enter atau klik Kirim';hint.style.color='';} }, 2500);
+  processWrong(false);
+}
+
+async function processWrong(isTimeout) {
+  if (!currentRoom || !isMyTurn) return;
+  const snap = await getDoc(doc(db, 'rooms', currentRoom));
+  if (!snap.exists()) return;
+  const room = snap.data();
+  const amHost = currentUser.uid === room.host;
+  const attemptKey = amHost ? 'hostAttempts' : 'guestAttempts';
+  const livesKey = amHost ? 'hostLives' : 'guestLives';
+  const curAttempts = (amHost ? room.hostAttempts : room.guestAttempts) || 0;
+  const curLives = amHost ? room.hostLives : room.guestLives;
+  const newAttempts = curAttempts + 1;
+
+  if (newAttempts >= 3) {
+    // Lose a life
+    const newLives = curLives - 1;
+    if (newLives <= 0) {
+      // Game over - this player loses
+      const winner = amHost ? room.guest : room.host;
+      await updateDoc(doc(db, 'rooms', currentRoom), {
+        status: 'finished',
+        winner,
+        [livesKey]: 0,
+        [attemptKey]: 0
+      });
+    } else {
+      toast(`💔 Nyawa berkurang! Sisa ${newLives} nyawa`, 'error');
+      await updateDoc(doc(db, 'rooms', currentRoom), {
+        [livesKey]: newLives,
+        [attemptKey]: 0,
+        currentTurn: amHost ? room.guest : room.host,
+        turnStartedAt: serverTimestamp()
+      });
+    }
+  } else {
+    await updateDoc(doc(db, 'rooms', currentRoom), {
+      [attemptKey]: newAttempts,
+      turnStartedAt: serverTimestamp()
+    });
+    toast(`❌ Salah! Sisa ${3 - newAttempts} kesempatan`, 'error');
+  }
+}
+
+// ============================================
+// CHAT
+// ============================================
+function renderChat(messages) {
+  const el = document.getElementById('chatMessages');
+  if (!el) return;
+  el.innerHTML = messages.slice(-20).map(m => {
+    if (m.system) return `<div class="chat-msg system"><span class="msg">${m.text}</span></div>`;
+    const isMe = m.uid === currentUser?.uid;
+    return `<div class="chat-msg"><span class="who" style="color:${isMe?'var(--accent)':'var(--accent2)'}">${m.name}: </span><span class="msg">${escHtml(m.text)}</span></div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+window.sendChat = async function() {
+  if (!currentRoom) return;
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  await updateDoc(doc(db, 'rooms', currentRoom), {
+    chat: arrayUnion({ uid: currentUser.uid, name: userData.name || 'Pemain', text, ts: Date.now() })
+  });
+};
+
+document.getElementById('chatInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') window.sendChat(); });
+document.getElementById('answerInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') window.submitWord(); });
+
+// ============================================
+// SHOW RESULT
+// ============================================
+async function showResult(room) {
+  stopTimer();
+  if (roomListener) { roomListener(); roomListener = null; }
+
+  const iWon = room.winner === currentUser.uid;
+  const amHost = currentUser.uid === room.host;
+  const myLives = amHost ? room.hostLives : room.guestLives;
+  const oppName = amHost ? room.guestName : room.hostName;
+  const totalWords = room.totalWords || (room.chain?.length || 1);
+  const myWords = (room.chain || []).filter((_, i) => (room.chainOwners||[])[i] === currentUser.uid).length;
+
+  // Result UI
+  document.getElementById('resultEmoji').textContent = iWon ? '🏆' : '😔';
+  const bigEl = document.getElementById('resultBig');
+  bigEl.textContent = iWon ? 'MENANG!' : 'KALAH!';
+  bigEl.className = 'result-big ' + (iWon ? 'win' : 'lose');
+  document.getElementById('resultLabel').textContent = 'HASIL PERMAINAN';
+  document.getElementById('resultSub').textContent = iWon ? `Kamu mengalahkan ${oppName}! Luar biasa!` : `${oppName} lebih unggul kali ini. Coba lagi!`;
+  document.getElementById('resultStats').innerHTML = `
+    <div class="result-stat-row"><span class="result-stat-label">Lawan</span><span class="result-stat-val">${oppName}</span></div>
+    <div class="result-stat-row"><span class="result-stat-label">Total Kata</span><span class="result-stat-val">${totalWords} kata</span></div>
+    <div class="result-stat-row"><span class="result-stat-label">Katamu</span><span class="result-stat-val">${myWords} kata</span></div>
+    <div class="result-stat-row"><span class="result-stat-label">Sisa Nyawa</span><span class="result-stat-val">${'❤️'.repeat(myLives)}</span></div>
+    <div class="result-stat-row"><span class="result-stat-label">Mode</span><span class="result-stat-val">${room.mode === 'daily' ? '📅 Daily' : room.mode === 'friend' ? '👥 Teman' : '🌏 Global'}</span></div>
+  `;
+
+  // Share text
+  const shareStr = iWon
+    ? `🔥 Aku menang di SambungKata!\n\n📝 ${totalWords} kata dimainkan\n💪 Kata dariku: ${myWords}\n❤️ Sisa nyawa: ${myLives}\n\nBerani lawan aku? Main sekarang!\nhttps://sambungkata.web.app`
+    : `😤 Aku kalah di SambungKata!\n\n📝 ${totalWords} kata dimainkan\n🎯 Kata dariku: ${myWords}\n\nTapi aku bakal balik dan menang!\nhttps://sambungkata.web.app`;
+  shareTextContent = shareStr;
+  document.getElementById('shareText').textContent = shareStr;
+
+  showPage('resultPage');
+  if (iWon) { launchConfetti(); }
+
+  // Update DB stats (host handles)
+  if (amHost) {
+    try {
+      const winnerUid = room.winner;
+      const loserUid = winnerUid === room.host ? room.guest : room.host;
+      // Winner stats
+      const winnerSnap = await getDoc(doc(db, 'users', winnerUid));
+      const winnerData = winnerSnap.data() || {};
+      const newStreak = (winnerData.streak || 0) + 1;
+      const newMaxStreak = Math.max(newStreak, winnerData.maxStreak || 0);
+      await updateDoc(doc(db, 'users', winnerUid), {
+        wins: increment(1), gamesPlayed: increment(1),
+        streak: newStreak, maxStreak: newMaxStreak
+      });
+      // Loser stats
+      await updateDoc(doc(db, 'users', loserUid), {
+        gamesPlayed: increment(1), streak: 0
+      });
+      // Save game record
+      await addDoc(collection(db, 'gameResults'), {
+        players: [room.host, room.guest],
+        playerNames: [room.hostName, room.guestName],
+        winner: room.winner,
+        totalWords, mode: room.mode || 'global',
+        createdAt: serverTimestamp()
+      });
+      // Daily score
+      if (room.mode === 'daily') {
+        const todayKey = new Date().toISOString().split('T')[0];
+        const winnerInfo = winnerUid === room.host ? {name: room.hostName} : {name: room.guestName};
+        await addDoc(collection(db, 'dailyScores'), {
+          uid: winnerUid, name: winnerInfo.name,
+          score: myWords, date: todayKey, createdAt: serverTimestamp()
+        });
+      }
+      // Cleanup room after delay
+      setTimeout(async () => {
+        try { await deleteDoc(doc(db, 'rooms', currentRoom)); } catch(e){}
+        currentRoom = null;
+      }, 5000);
+    } catch(e) { console.error('Stats update error:', e); }
+  }
+
+  // If I won, update my local userData
+  if (iWon) {
+    userData.wins = (userData.wins || 0) + 1;
+    userData.streak = (userData.streak || 0) + 1;
+  } else {
+    userData.streak = 0;
+  }
+  userData.gamesPlayed = (userData.gamesPlayed || 0) + 1;
+}
+
+// ============================================
+// SHARE
+// ============================================
+window.shareWA = function() {
+  window.open('https://wa.me/?text=' + encodeURIComponent(shareTextContent), '_blank');
+};
+window.shareTG = function() {
+  window.open('https://t.me/share/url?url=https://sambungkata.web.app&text=' + encodeURIComponent(shareTextContent), '_blank');
+};
+window.shareTwitter = function() {
+  window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareTextContent), '_blank');
+};
+window.copyShare = function() {
+  navigator.clipboard.writeText(shareTextContent).then(() => toast('✅ Teks disalin!', 'success'));
+};
+
+// ============================================
+// NAV HELPERS
+// ============================================
+window.goHome = function() {
+  stopTimer();
+  if (roomListener) { roomListener(); roomListener = null; }
+  currentRoom = null;
+  showPage('homePage');
+  loadOrCreateUser(currentUser).then(() => initHome());
+};
+
+window.playAgain = function() {
+  stopTimer();
+  currentRoom = null;
+  showPage('homePage');
+  if (lastGameMode === 'global') setTimeout(goToGlobal, 100);
+  else if (lastGameMode === 'friend') goToFriend();
+  else if (lastGameMode === 'daily') goToDaily();
+};
+
+window.confirmLeaveGame = function() {
+  if (confirm('Keluar dari game? Kamu akan dianggap kalah!')) {
+    // Mark opponent as winner
+    if (currentRoom && gameData) {
+      const amHost = currentUser.uid === gameData.host;
+      const winner = amHost ? gameData.guest : gameData.host;
+      updateDoc(doc(db, 'rooms', currentRoom), { status: 'finished', winner }).catch(()=>{});
+    }
+    stopTimer();
+    if (roomListener) { roomListener(); roomListener = null; }
+    currentRoom = null;
+    goHome();
+  }
+};
+
+// ============================================
+// CONFETTI
+// ============================================
+function launchConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  const colors = ['#7c3aed','#f59e0b','#10b981','#ef4444','#3b82f6','#ec4899','#fff'];
+  
+  for (let i = 0; i < 150; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      w: Math.random() * 12 + 4,
+      h: Math.random() * 6 + 2,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      vy: Math.random() * 3 + 2,
+      vx: (Math.random() - 0.5) * 3,
+      rot: Math.random() * 360,
+      rots: (Math.random() - 0.5) * 6
+    });
+  }
+  
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    particles.forEach(p => {
+      p.y += p.vy; p.x += p.vx; p.rot += p.rots;
+      if (p.y < canvas.height + 20) alive = true;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx.restore();
+    });
+    if (alive && frame < 200) { frame++; requestAnimationFrame(draw); }
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  draw();
+}
+
+// Word particle effect
+function spawnWordParticle(word) {
+  const el = document.createElement('div');
+  el.textContent = '+' + word;
+  el.style.cssText = `position:fixed;bottom:30%;left:50%;transform:translateX(-50%);
+    font-family:var(--font-display);font-size:22px;color:var(--accent3);
+    pointer-events:none;z-index:100;animation:wordFloat 1.2s ease-out forwards;`;
+  document.body.appendChild(el);
+  const style = document.createElement('style');
+  style.textContent = '@keyframes wordFloat{0%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}100%{opacity:0;transform:translateX(-50%) translateY(-80px) scale(1.3)}}';
+  document.head.appendChild(style);
+  setTimeout(() => { el.remove(); style.remove(); }, 1300);
+}
+
+// ============================================
+// TOAST
+// ============================================
+window.toast = function(msg, type = 'info') {
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  const icons = { success: '✅', error: '❌', info: '💡' };
+  t.innerHTML = `<span>${icons[type]||'💡'}</span> ${msg}`;
+  wrap.appendChild(t);
+  setTimeout(() => { t.style.transition='all 0.3s'; t.style.opacity='0'; t.style.transform='translateX(100%)'; setTimeout(()=>t.remove(),300); }, 3000);
+};
+
+// ============================================
+// UTILS
+// ============================================
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+function getRandomWord(minLen = 3) {
+  const arr = Array.from(ALL_WORDS).filter(w => w.length >= minLen && w.length <= 8);
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Fix timer circumference for 45 radius
+document.getElementById('timerFill').style.strokeDasharray = String(2 * Math.PI * 45);
+
+console.log(`✅ SambungKata loaded. Kamus: ${ALL_WORDS.size} kata`);
+</script>
+</body>
+</html>

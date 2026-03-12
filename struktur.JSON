@@ -1,0 +1,197 @@
+Struktur JSON Database Game Sambung Kata
+JSON
+Salin kode
+{
+  "users": {
+    "uid_1": {
+      "username": "CrossFlare",
+      "email": "user@gmail.com",
+      "photo": "https://photo-url",
+      "wins": 12,
+      "streak": 3,
+      "badge": "Pro",
+      "createdAt": "2026-03-12T10:00:00"
+    }
+  },
+
+  "leaderboard": {
+    "uid_1": {
+      "username": "CrossFlare",
+      "wins": 12
+    }
+  },
+
+  "rooms": {
+    "ROOM123": {
+      "host": "uid_1",
+      "players": [
+        "uid_1",
+        "uid_2"
+      ],
+      "status": "playing",
+      "currentWord": "makan",
+      "nextLetters": "an",
+      "turn": "uid_2",
+      "round": 1,
+      "timer": 50,
+      "mistakes": {
+        "uid_1": 0,
+        "uid_2": 1
+      },
+      "usedWords": [
+        "makan",
+        "anak"
+      ],
+      "createdAt": 1710000000
+    }
+  },
+
+  "globalQueue": {
+    "uid_1": {
+      "username": "CrossFlare",
+      "joinedAt": 1710000000
+    }
+  },
+
+  "dailyChallenge": {
+    "date": "2026-03-12",
+    "startWord": "rumah",
+    "leaderboard": {
+      "uid_1": {
+        "username": "CrossFlare",
+        "score": 15
+      }
+    }
+  },
+
+  "words": {
+    "makan": true,
+    "anak": true,
+    "akhir": true,
+    "rumah": true
+  }
+}
+Penjelasan Setiap Bagian
+1️⃣ users
+Menyimpan profil pemain.
+Contoh:
+JSON
+Salin kode
+{
+  "username": "CrossFlare",
+  "email": "user@gmail.com",
+  "wins": 12
+}
+Digunakan untuk:
+profil pemain
+statistik
+badge
+win streak
+2️⃣ leaderboard
+Leaderboard global.
+Disortir berdasarkan:
+Salin kode
+
+wins terbanyak
+Contoh:
+JSON
+Salin kode
+{
+  "username": "CrossFlare",
+  "wins": 12
+}
+3️⃣ rooms
+Digunakan untuk match multiplayer realtime.
+Contoh:
+JSON
+Salin kode
+"ROOM123"
+isi:
+pemain
+kata terakhir
+giliran
+timer
+kesalahan
+4️⃣ globalQueue
+Digunakan untuk matchmaking global.
+Ketika user klik:
+Salin kode
+
+Play Global
+dia masuk queue.
+Server akan mencocokkan:
+Salin kode
+
+2 pemain online
+lalu membuat room otomatis.
+5️⃣ dailyChallenge
+Mode tantangan harian.
+Contoh:
+Salin kode
+
+kata awal sama untuk semua pemain
+Leaderboard khusus harian.
+6️⃣ words
+Database kata dari KBBI.
+Contoh:
+JSON
+Salin kode
+{
+  "makan": true,
+  "anak": true,
+  "akhir": true
+}
+Digunakan untuk validasi kata.
+Contoh Flow Game
+1️⃣ pemain login
+2️⃣ klik Global Match
+3️⃣ masuk globalQueue
+4️⃣ server membuat room
+5️⃣ game berjalan realtime
+update:
+Salin kode
+
+currentWord
+turn
+timer
+mistakes
+Contoh Data Saat Game Berjalan
+JSON
+Salin kode
+{
+  "currentWord": "makan",
+  "nextLetters": "an",
+  "turn": "uid_2",
+  "timer": 32
+}
+Bonus JSON Kata (Contoh)
+Contoh dataset kata kecil:
+JSON
+Salin kode
+{
+  "words": [
+    "makan",
+    "anak",
+    "akhir",
+    "rumah",
+    "hutan",
+    "tangan",
+    "nganga",
+    "gajah",
+    "hati",
+    "ikan"
+  ]
+}
+Biasanya game sambung kata memakai:
+Salin kode
+
+20.000 - 100.000 kata
+Saran Penting untuk Firebase
+Gunakan koleksi seperti ini:
+Salin kode
+
+users
+rooms
+leaderboard
+words
+dailyChallenge
